@@ -317,7 +317,19 @@ namespace WordDocGenerator
                     //table.Cell(row, column).Merge(table.Cell(range.Key, range.Value));
                 //}
             }
-            table.Cell(row, column).Range.Text = value;
+            Cell cell = table.Cell(row, column);
+
+            // Access the existing paragraph or add a new one
+            Paragraph paragraph = cell.Range.Paragraphs.Count > 0
+                ? cell.Range.Paragraphs[1]
+                : cell.Range.Paragraphs.Add();
+
+            // Set the alignment to center
+            paragraph.Alignment = WdParagraphAlignment.wdAlignParagraphCenter;
+
+            // Add text to the cell, if needed
+            paragraph.Range.Text = value;
+            //table.Cell(row, column).Range.Text = value;
         }
     }
 }
