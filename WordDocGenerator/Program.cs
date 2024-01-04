@@ -174,7 +174,7 @@ namespace WordDocGenerator
             // Get the array of cell data objects from the ProcessJSON function
             List<Dictionary<string, object>> cellDataList = ProcessJSON(json);
             Console.WriteLine($"rowsCount: {rowsCount}, colsCount: {colsCount}");
-            Table table = doc.Tables.Add(doc.Range(), rowsCount + 1, colsCount + 1);
+            Table table = doc.Tables.Add(doc.Range(), rowsCount, colsCount);
 
             // Iterate through each cell data object
             foreach (Dictionary<string, object> cellData in cellDataList)
@@ -187,7 +187,7 @@ namespace WordDocGenerator
 
                 // Execute your desired function, passing the relevant cell data
                 Console.WriteLine($"rowNumber: {rowNumber}, colNumber: {colNumber}, value: {value}, cellType: {cellType}");
-                InsertTextInTable(table, rowNumber, colNumber, value); // Replace "MyFunction" with your actual function name
+                InsertTextInTable(table, rowNumber, colNumber, value, cellData); // Replace "MyFunction" with your actual function name
             }
             // Save the document
             doc.SaveAs2("C:\\Documents\\example.docx");
@@ -205,20 +205,22 @@ namespace WordDocGenerator
             int colIndex = 0;
 
             // Iterate through rows
-            foreach (var rowItem in parsedJson["rows"].Children())
+            foreach (var rowItem in parsedJson["rows"]!.Children())
             {
                 // Iterate through columns within the row
-                foreach (var colItem in rowItem["cols"].Children())
+                foreach (var colItem in rowItem["cols"]!.Children())
                 {
-                    Dictionary<string, object> cellData = new();
-                    cellData["rowNumber"] = rowIndex;
-                    cellData["colNumber"] = colIndex;
+                    Dictionary<string, object> cellData = new()
+                    {
+                        ["rowNumber"] = rowIndex + 1,
+                        ["colNumber"] = colIndex + 1
+                    };
 
                     // Extract rowSpan and colSpan
                     int? rowSpan = colItem["rowSpan"]?.Value<int>();
                     int? colSpan = colItem["colSpan"]?.Value<int>();
-                    cellData["rowSpan"] = rowSpan;
-                    cellData["colSpan"] = colSpan;
+                    cellData["rowSpan"] = rowSpan!;
+                    cellData["colSpan"] = colSpan!;
 
                     // Access the first element of the cellContent array
                     JToken firstCellContent = colItem["cellContent"]?.FirstOrDefault();
@@ -285,24 +287,37 @@ namespace WordDocGenerator
 
             return result;
         }
-        static void InsertTextInTable(Table table, int row, int column, string value, KeyValuePair<string, object>? cellContent = null)
+        static void InsertTextInTable(Table table, int row, int column, string value, Dictionary<string, object>? cellContent = null)
         {
-            row++;
-            column++;
             if (row <= 0 || column <= 0 || row > table.Rows.Count || column > table.Columns.Count)
             {
                 Console.WriteLine($"Invalid table position. {row} {row > table.Rows.Count}, {column} {column > table.Columns.Count}");
                 return;
             }
-            if (cellContent != null && cellContent.Value is KeyValuePair<string, object> kvp && kvp.Value is Dictionary<string, object> cellData && cellData.ContainsKey("mergedCells"))
+            //var mergedRanges = (List<KeyValuePair<int, int>>)cellContent["mergedCells"];
+            //foreach (var range in mergedRanges)
+            //{
+            //Microsoft.Office.Interop.Word.Range cellRange = table.Cell(row, range.Value).Range;  // Get the range of the target cell
+            //    //table.Cell(row, range.Key).Merge(table.Cell(row, range.Value));
+            //cellRange.Cells.Merge();  // Merge the cells within the range
+            //}
+            if (cellContent != null && cellContent.ContainsKey("mergedCells"))
             {
-                var mergedRanges = (List<KeyValuePair<int, int>>)cellData["mergedCells"];
-                foreach (var range in mergedRanges)
-                {
-                    table.Cell(row, range.Key).Merge(table.Cell(row, range.Value));
-                }
+                //var mergedRanges = (List<KeyValuePair<int, int>>)cellContent["mergedCells"];
+                //foreach (var range in mergedRanges)
+                //{
+                    // Get the range of the cell containing the merge field
+                    var cellRange = table.Cell(row, column).Range;
+
+                    // Adjust the End property of the range to span multiple columns
+                    cellRange.SetRange(cellRange.Start, table.Cell(row, column + int.Parse(cellContent["colSpan"].ToString()) - 1).Range.End);
+
+                    // Merge the cells
+                    cellRange.Cells.Merge();
+                    //table.Cell(row, column).Merge(table.Cell(range.Key, range.Value));
+                //}
             }
-            table.Cell(row, column).Range.Text = cellContent?.Value.ToString() ?? value;
+            table.Cell(row, column).Range.Text = value;
         }
     }
 }
