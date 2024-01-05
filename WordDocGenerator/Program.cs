@@ -14,8 +14,8 @@ namespace WordDocGenerator
             ""cols"": [
                 {
                     ""font"": {},
-                    ""bgColor"": """",
-                    ""color"": """",
+                    ""bgColor"": ""#32a852"",
+                    ""color"": ""#fff"",
                     ""colSpan"": 3,
                     ""rowSpan"": ""1"",
                     ""textAlign"": """",
@@ -160,7 +160,7 @@ namespace WordDocGenerator
     ""totalCols"": 3
 }";
             // Create a new Word application using late binding
-            dynamic? wordApp = Activator.CreateInstance(Type.GetTypeFromProgID("Word.Application")!);
+            dynamic? wordApp = Activator.CreateInstance(Type.GetTypeFromProgID("Word.Application"));
 
             // Create a new document
             dynamic doc = wordApp!.Documents.Add();
@@ -216,14 +216,20 @@ namespace WordDocGenerator
                         ["colNumber"] = colIndex + 1
                     };
 
-                    // Extract rowSpan and colSpan
+                    // Extract needed keys and values
                     int? rowSpan = colItem["rowSpan"]?.Value<int>();
                     int? colSpan = colItem["colSpan"]?.Value<int>();
+                    string? textAlign = colItem["textAlign"]?.Value<string>();
+                    string? bgColor = colItem["bgColor"]?.Value<string>();
+                    string? color = colItem["color"]?.Value<string>();
                     cellData["rowSpan"] = rowSpan!;
                     cellData["colSpan"] = colSpan!;
+                    cellData["textAlign"] = textAlign!;
+                    cellData["bgColor"] = bgColor!;
+                    cellData["color"] = color!;
 
                     // Access the first element of the cellContent array
-                    JToken firstCellContent = colItem["cellContent"]?.FirstOrDefault();
+                    JToken? firstCellContent = colItem["cellContent"]?.FirstOrDefault();
 
                     if (firstCellContent != null)
                     {
@@ -234,24 +240,20 @@ namespace WordDocGenerator
                         cellData["value"] = label;
                         cellData["cellType"] = cellType;
 
-
                         // Handle images (if applicable)
                         if (cellType == "Image")
                         {
                             // Incorporate image information
-                            cellData["imageName"] = colItem["cellContent"]?.FirstOrDefault()["imageName"]?.ToString();
-                            cellData["imageSrc"] = colItem["cellContent"]?.FirstOrDefault()["imageSrc"]?.ToString();
-                            cellData["imageWidth"] = colItem["cellContent"]?.FirstOrDefault()["ImageWidth"]?.ToString();
-                            cellData["imageHeight"] = colItem["cellContent"]?.FirstOrDefault()["ImageHeight"]?.ToString();
+                            cellData["imageName"] = colItem["cellContent"]?.FirstOrDefault()!["imageName"]?.ToString()!;
+                            cellData["imageSrc"] = colItem["cellContent"]?.FirstOrDefault()!["imageSrc"]?.ToString()!;
+                            cellData["imageWidth"] = colItem["cellContent"]?.FirstOrDefault()!["ImageWidth"]?.ToString()!;
+                            cellData["imageHeight"] = colItem["cellContent"]?.FirstOrDefault()!["ImageHeight"]?.ToString()!;
                         }
                     }
-
                     result.Add(cellData);
-
                     // Increment column index, accounting for colSpan
                     colIndex += colSpan ?? 1;
                 }
-
                 // Reset column index for the next row
                 colIndex = 0;
                 rowIndex++;
@@ -283,8 +285,6 @@ namespace WordDocGenerator
                 int rowNumber = (int)cellData["rowNumber"];
                 cellData["mergedCells"] = mergedCells.TryGetValue(rowNumber, out var rangesInRow) ? rangesInRow : null;
             }
-
-
             return result;
         }
         static void InsertTextInTable(Table table, int row, int column, string value, Dictionary<string, object>? cellContent = null)
@@ -294,6 +294,7 @@ namespace WordDocGenerator
                 Console.WriteLine($"Invalid table position. {row} {row > table.Rows.Count}, {column} {column > table.Columns.Count}");
                 return;
             }
+            /** maybe can be used to merge rows?
             //var mergedRanges = (List<KeyValuePair<int, int>>)cellContent["mergedCells"];
             //foreach (var range in mergedRanges)
             //{
@@ -301,12 +302,11 @@ namespace WordDocGenerator
             //    //table.Cell(row, range.Key).Merge(table.Cell(row, range.Value));
             //cellRange.Cells.Merge();  // Merge the cells within the range
             //}
-            if (cellContent != null && cellContent.ContainsKey("mergedCells"))
+            */
+            if (cellContent != null)
             {
-                //var mergedRanges = (List<KeyValuePair<int, int>>)cellContent["mergedCells"];
-                //foreach (var range in mergedRanges)
-                //{
-                    // Get the range of the cell containing the merge field
+                if (cellContent.ContainsKey("mergedCells"))
+                {
                     var cellRange = table.Cell(row, column).Range;
 
                     // Adjust the End property of the range to span multiple columns
@@ -314,22 +314,75 @@ namespace WordDocGenerator
 
                     // Merge the cells
                     cellRange.Cells.Merge();
-                    //table.Cell(row, column).Merge(table.Cell(range.Key, range.Value));
-                //}
-            }
-            Cell cell = table.Cell(row, column);
+                }
 
+                Cell cell = table.Cell(row, column);
+                string? textAlign = cellContent.TryGetValue("textAlign", out object? content) ? (string)content : "";
+                string? bgColor = cellContent.TryGetValue("bgColor", out object? bColor) ? (string)bColor : "";
+                string? textColor = cellContent.TryGetValue("color", out object? fontColor) ? (string)fontColor : "";
+                Paragraph paragraph = AlignCellContent(cell, textAlign);
+
+                if (bgColor != "")
+                {
+                    System.Drawing.Color backgroundColor = HexToColor(bgColor);
+
+                    // Set background color
+                    cell.Range.Shading.BackgroundPatternColor = (WdColor)(backgroundColor.R + 0x100 * backgroundColor.G + 0x10000 * backgroundColor.B);
+                }
+                if (textColor != "")
+                {
+                    // Access the font of the cell
+                    Font font = cell.Range.Font;
+                    System.Drawing.Color color = HexToColor(textColor);
+                    font.Color = (WdColor)(color.R + 0x100 * color.G + 0x10000 * color.B);
+                }
+                // Add Content to the cell
+                paragraph.Range.Text = value;
+            }
+            else
+            {
+                table.Cell(row, column).Range.Text = value;
+            }
+        }
+        static Paragraph AlignCellContent(Cell cell, string textAlign = "")
+        {
             // Access the existing paragraph or add a new one
             Paragraph paragraph = cell.Range.Paragraphs.Count > 0
                 ? cell.Range.Paragraphs[1]
                 : cell.Range.Paragraphs.Add();
 
-            // Set the alignment to center
-            paragraph.Alignment = WdParagraphAlignment.wdAlignParagraphCenter;
+            switch (textAlign)
+            {
+                case "left":
+                    paragraph.Alignment = WdParagraphAlignment.wdAlignParagraphLeft;
+                    break;
+                case "right":
+                    paragraph.Alignment = WdParagraphAlignment.wdAlignParagraphRight;
+                    break;
+                case "center":
+                    paragraph.Alignment = WdParagraphAlignment.wdAlignParagraphCenter;
+                    break;
+                default:
+                    break;
+            }
 
-            // Add text to the cell, if needed
-            paragraph.Range.Text = value;
-            //table.Cell(row, column).Range.Text = value;
+            return paragraph;
+        }
+        static System.Drawing.Color HexToColor(string hex)
+        {
+            hex = hex.TrimStart('#');
+            if (hex.Length < 6)
+            {
+                hex += new string(hex[0], 3);
+            }
+
+            int rgb = int.Parse(hex, System.Globalization.NumberStyles.HexNumber);
+
+            byte red = (byte)(rgb >> 16);
+            byte green = (byte)(rgb >> 8);
+            byte blue = (byte)(rgb);
+
+            return System.Drawing.Color.FromArgb(red, green, blue);
         }
     }
 }
