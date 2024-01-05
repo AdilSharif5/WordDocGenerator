@@ -13,7 +13,10 @@ namespace WordDocGenerator
         {
             ""cols"": [
                 {
-                    ""font"": {},
+                    ""font"": {
+""family"": ""Karla"",
+""size"": 24
+},
                     ""bgColor"": ""#32a852"",
                     ""color"": ""#fff"",
                     ""colSpan"": 3,
@@ -228,6 +231,15 @@ namespace WordDocGenerator
                     cellData["bgColor"] = bgColor!;
                     cellData["color"] = color!;
 
+                    if (colItem.HasValues && colItem["font"]!.Type == JTokenType.Object && colItem["font"]!.Children().Any())
+                    {
+                        var font = colItem["font"];
+                        string? fontFamily = font["family"]?.Value<string>() ?? string.Empty;
+                        float fontSize = font["size"]?.Value<float>() ?? 0;
+                        cellData["fontFamily"] = fontFamily;
+                        cellData["fontSize"] = fontSize;
+                    }
+
                     // Access the first element of the cellContent array
                     JToken? firstCellContent = colItem["cellContent"]?.FirstOrDefault();
 
@@ -317,24 +329,34 @@ namespace WordDocGenerator
                 }
 
                 Cell cell = table.Cell(row, column);
+                Font font = cell.Range.Font;
                 string? textAlign = cellContent.TryGetValue("textAlign", out object? content) ? (string)content : "";
                 string? bgColor = cellContent.TryGetValue("bgColor", out object? bColor) ? (string)bColor : "";
                 string? textColor = cellContent.TryGetValue("color", out object? fontColor) ? (string)fontColor : "";
+                string? fontFamily = cellContent.TryGetValue("fontFamily", out object? family) ? (string)family : "";
+                float? fontSize = cellContent.TryGetValue("fontSize", out object? size) ? (float)size : null;
                 Paragraph paragraph = AlignCellContent(cell, textAlign);
 
                 if (bgColor != "")
                 {
                     System.Drawing.Color backgroundColor = HexToColor(bgColor);
-
                     // Set background color
                     cell.Range.Shading.BackgroundPatternColor = (WdColor)(backgroundColor.R + 0x100 * backgroundColor.G + 0x10000 * backgroundColor.B);
                 }
                 if (textColor != "")
                 {
-                    // Access the font of the cell
-                    Font font = cell.Range.Font;
                     System.Drawing.Color color = HexToColor(textColor);
                     font.Color = (WdColor)(color.R + 0x100 * color.G + 0x10000 * color.B);
+                }
+                if (fontFamily != "")
+                {
+                    // Set font family
+                    font.Name = fontFamily;
+                }
+                if (fontSize != null)
+                {
+                    // Set font size
+                    font.Size = (float)fontSize;
                 }
                 // Add Content to the cell
                 paragraph.Range.Text = value;
