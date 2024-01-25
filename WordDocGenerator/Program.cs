@@ -1,6 +1,11 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
+using System.Collections;
+using Xceed.Words.NET;
 using Microsoft.Office.Interop.Word;
+using DocumentFormat.OpenXml.ExtendedProperties;
+using System.Reflection;
 
 namespace WordDocGenerator
 {
@@ -8,25 +13,252 @@ namespace WordDocGenerator
     {
         static void Main()
         {
+            #region
+            //            string json = @"{
+            //    ""rows"": [
+            //        {
+            //            ""cols"": [
+            //                {
+            //                    ""font"": {
+            //""family"": ""Karla"",
+            //""size"": 24
+            //},
+            //                    ""bgColor"": ""#32a852"",
+            //                    ""color"": ""#fff"",
+            //                    ""colSpan"": 3,
+            //                    ""rowSpan"": ""1"",
+            //                    ""textAlign"": """",
+            //                    ""cellContent"": [
+            //                        {
+            //                            ""component"": ""Companion Policy Information"",
+            //                            ""cellType"": ""StaticText"",
+            //							""label"": ""Companion Policy Information"",
+            //                        }
+            //                    ]
+            //                }
+            //            ]
+            //        },
+            //        {
+            //            ""cols"": [
+            //                {
+            //                    ""font"": {},
+            //                    ""bgColor"": """",
+            //                    ""color"": """",
+            //                    ""colSpan"": ""1"",
+            //                    ""rowSpan"": ""1"",
+            //                    ""textAlign"": """",
+            //                    ""cellContent"": [
+            //                        {
+            //                            ""label"": ""<p>There are many variations of passages of Lorem Ipsum available, but the majority have suffered alteration in some form, by injected humour, or randomised words which don't look even slightly believable. If you are going to use a passage of Lorem Ipsum, you need to be sure there isn't anything embarrassing hidden in the middle of text. All the Lorem Ipsum generators on the Internet tend to repeat predefined chunks as necessary, making this the first true generator on the Internet. It uses a dictionary of over 200 Latin words, combined with a handful of model sentence structures, to generate Lorem Ipsum which looks reasonable. The generated Lorem Ipsum is therefore always free from repetition, injected humour, or non-characteristic words etc.</p>"",
+            //                            ""display"": ""block"",
+            //                            ""cellType"": ""StaticText""
+
+            //                        }
+            //                    ]
+            //                },
+            //                {
+            //                    ""font"": {},
+            //                    ""bgColor"": """",
+            //                    ""color"": """",
+            //                    ""cellContent"": [],
+            //                    ""colSpan"": ""1"",
+            //                    ""rowSpan"": ""1"",
+            //                    ""textAlign"": """"
+            //                },
+            //                {
+            //                    ""font"": {},
+            //                    ""bgColor"": """",
+            //                    ""color"": """",
+            //                    ""cellContent"": [
+            //                        {
+            //                            ""label"": ""<p>There are many variations of passages of Lorem Ipsum available, but the majority have suffered alteration in some form, by injected humour, or randomised words which don't look even slightly believable. If you are going to use a passage of Lorem Ipsum, you need to be sure there isn't anything embarrassing hidden in the middle of text. All the Lorem Ipsum generators on the Internet tend to repeat predefined chunks as necessary, making this the first true generator on the Internet. It uses a dictionary of over 200 Latin words, combined with a handful of model sentence structures, to generate Lorem Ipsum which looks reasonable. The generated Lorem Ipsum is therefore always free from repetition, injected humour, or non-characteristic words etc.</p>"",
+            //                            ""display"": ""block"",
+            //                            ""cellType"": ""StaticText""
+            //                        }
+            //                    ],
+            //                    ""colSpan"": ""1"",
+            //                    ""rowSpan"": ""1"",
+            //                    ""textAlign"": """"
+            //                }
+            //            ]
+            //        },
+            //        {
+            //            ""cols"": [
+            //                {
+            //                    ""font"": {},
+            //                    ""bgColor"": """",
+            //                    ""color"": """",
+            //                    ""colSpan"": ""1"",
+            //                    ""rowSpan"": ""1"",
+            //                    ""textAlign"": """",
+            //                    ""cellContent"": [
+            //                        {
+            //                            ""valuesList"": [
+            //                                ""Male"",
+            //                                ""Female"",
+            //                                ""Other""
+            //                            ],
+            //                            ""label"": ""Gender"",
+            //                            ""display"": ""block"",
+            //                            ""align"": ""block"",
+            //                            ""cellType"": ""Radio""
+            //                        }
+            //                    ]
+            //                },
+            //                {
+            //                    ""font"": {},
+            //                    ""bgColor"": """",
+            //                    ""color"": """",
+            //                    ""cellContent"": [
+            //                        {
+            //                            ""valuesList"": [
+            //                                ""Personal Home"",
+            //                                ""Fire"",
+            //                                ""Cooking""
+            //                            ],
+            //                            ""label"": ""LOB"",
+            //                            ""display"": ""block"",
+            //                            ""align"": ""inline-block"",
+            //                            ""cellType"": ""Checkbox""
+            //                        }
+            //                    ],
+            //                    ""colSpan"": ""1"",
+            //                    ""rowSpan"": ""1"",
+            //                    ""textAlign"": """"
+            //                },
+            //                {
+            //                    ""font"": {},
+            //                    ""bgColor"": """",
+            //                    ""color"": """",
+            //                    ""cellContent"": [
+            //                        {
+            //                            ""imageName"": ""whatsapp.png"",
+            //                            ""imageSrc"": ""blob:http://localhost:4200/2b432dee-98d8-44ac-9813-c95da8a017ac""
+            //,
+            //                            ""ImageWidth"": ""150"",
+            //                            ""ImageHeight"": ""150"",
+            //                            ""cellType"": ""Image""
+            //                        }
+            //                    ],
+            //                    ""colSpan"": ""1"",
+            //                    ""rowSpan"": ""1"",
+            //                    ""textAlign"": """"
+            //                }
+            //            ]
+            //        },
+            //        {
+            //            ""cols"": [
+            //                {
+            //                    ""font"": {},
+            //                    ""bgColor"": """",
+            //                    ""color"": """",
+            //                    ""colSpan"": 3,
+            //                    ""rowSpan"": ""1"",
+            //                    ""textAlign"": """",
+            //                    ""cellContent"": [
+            //                        {
+            //                            ""component"": ""Address Information"",
+            //                            ""cellType"": ""StaticText"",
+            //                                                        ""label"": ""Address Information""
+            //                        }
+            //                    ]
+            //                }
+            //            ]
+            //        }
+            //    ],
+            //    ""totalCols"": 3
+            //}";
+            #endregion
             string json = @"{
     ""rows"": [
         {
             ""cols"": [
                 {
-                    ""font"": {
-""family"": ""Karla"",
-""size"": 24
-},
-                    ""bgColor"": ""#32a852"",
-                    ""color"": ""#fff"",
+                    ""font"": {},
+                    ""bgColor"": """",
+                    ""color"": """",
                     ""colSpan"": 3,
                     ""rowSpan"": ""1"",
                     ""textAlign"": """",
                     ""cellContent"": [
                         {
                             ""component"": ""Companion Policy Information"",
-                            ""cellType"": ""StaticText"",
-							""label"": ""Companion Policy Information"",
+                            ""tableJson"": {
+                                ""rows"": [
+                                    {
+                                        ""cols"": [
+                                            {
+                                                ""font"": {},
+                                                ""bgColor"": ""#272872"",
+                                                ""color"": ""#fff"",
+                                                ""cellContent"": [
+                                                    {
+                                                        ""cellType"": ""StaticText"",
+                                                        ""label"": ""Companion Policy Information""
+                                                    }
+                                                ],
+                                                ""colSpan"": ""4"",
+                                                ""rowSpan"": ""1"",
+                                                ""textAlign"": ""center""
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        ""cols"": [
+                                            {
+                                                ""font"": {},
+                                                ""bgColor"": """",
+                                                ""cellContent"": [
+                                                    {
+                                                        ""cellType"": ""DynamicInput"",
+                                                        ""label"": ""Participating Insurer""
+                                                    }
+                                                ],
+                                                ""colSpan"": ""1"",
+                                                ""rowSpan"": ""1""
+                                            },
+                                            {
+                                                ""font"": {},
+                                                ""bgColor"": """",
+                                                ""cellContent"": [
+                                                    {
+                                                        ""cellType"": ""DynamicInput"",
+                                                        ""label"": ""Companion Policy Number""
+                                                    }
+                                                ],
+                                                ""colSpan"": ""1"",
+                                                ""rowSpan"": ""1""
+                                            },
+                                            {
+                                                ""font"": {},
+                                                ""bgColor"": """",
+                                                ""cellContent"": [
+                                                    {
+                                                        ""cellType"": ""DynamicInput"",
+                                                        ""label"": ""Dwelling - Coverage A Limit""
+                                                    }
+                                                ],
+                                                ""colSpan"": ""1"",
+                                                ""rowSpan"": ""1""
+                                            },
+                                            {
+                                                ""font"": {},
+                                                ""bgColor"": """",
+                                                ""cellContent"": [
+                                                    {
+                                                        ""cellType"": ""DynamicInput"",
+                                                        ""label"": ""Expiration Date""
+                                                    }
+                                                ],
+                                                ""colSpan"": ""1"",
+                                                ""rowSpan"": ""1""
+                                            }
+                                        ]
+                                    }
+                                ],
+                                ""totalCols"": 4
+                            },
+                            ""cellType"": ""Component""
                         }
                     ]
                 }
@@ -46,7 +278,6 @@ namespace WordDocGenerator
                             ""label"": ""<p>There are many variations of passages of Lorem Ipsum available, but the majority have suffered alteration in some form, by injected humour, or randomised words which don't look even slightly believable. If you are going to use a passage of Lorem Ipsum, you need to be sure there isn't anything embarrassing hidden in the middle of text. All the Lorem Ipsum generators on the Internet tend to repeat predefined chunks as necessary, making this the first true generator on the Internet. It uses a dictionary of over 200 Latin words, combined with a handful of model sentence structures, to generate Lorem Ipsum which looks reasonable. The generated Lorem Ipsum is therefore always free from repetition, injected humour, or non-characteristic words etc.</p>"",
                             ""display"": ""block"",
                             ""cellType"": ""StaticText""
-							
                         }
                     ]
                 },
@@ -127,7 +358,8 @@ namespace WordDocGenerator
                     ""cellContent"": [
                         {
                             ""imageName"": ""whatsapp.png"",
-                            ""imageSrc"": ""blob:http://localhost:4200/2b432dee-98d8-44ac-9813-c95da8a017ac""
+                            ""imageSrc"": ""blob:
+http://localhost:4200/2b432dee-98d8-44ac-9813-c95da8a017ac""
 ,
                             ""ImageWidth"": ""150"",
                             ""ImageHeight"": ""150"",
@@ -152,8 +384,70 @@ namespace WordDocGenerator
                     ""cellContent"": [
                         {
                             ""component"": ""Address Information"",
-                            ""cellType"": ""StaticText"",
+                            ""tableJson"": {
+                                ""rows"": [
+                                    {
+                                        ""cols"": [
+                                            {
+                                                ""font"": {},
+                                                ""bgColor"": ""#272872"",
+                                                ""color"": ""#fff"",
+                                                ""cellContent"": [
+                                                    {
+                                                        ""cellType"": ""StaticText"",
                                                         ""label"": ""Address Information""
+                                                    }
+                                                ],
+                                                ""colSpan"": ""8"",
+                                                ""rowSpan"": ""1"",
+                                                ""textAlign"": ""center""
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        ""cols"": [
+                                            {
+                                                ""font"": {},
+                                                ""bgColor"": """",
+                                                ""cellContent"": [
+                                                    {
+                                                        ""cellType"": ""DynamicInput"",
+                                                        ""label"": ""Risk Address - Physical Location of Property - Number and Street Address""
+                                                    }
+                                                ],
+                                                ""colSpan"": ""6"",
+                                                ""rowSpan"": ""1""
+                                            },
+                                            {
+                                                ""font"": {},
+                                                ""bgColor"": """",
+                                                ""cellContent"": [
+                                                    {
+                                                        ""cellType"": ""DynamicInput"",
+                                                        ""label"": ""City""
+                                                    }
+                                                ],
+                                                ""colSpan"": ""1"",
+                                                ""rowSpan"": ""1""
+                                            },
+                                            {
+                                                ""font"": {},
+                                                ""bgColor"": """",
+                                                ""cellContent"": [
+                                                    {
+                                                        ""cellType"": ""DynamicInput"",
+                                                        ""label"": ""State""
+                                                    }
+                                                ],
+                                                ""colSpan"": ""1"",
+                                                ""rowSpan"": ""1""
+                                            }
+                                        ]
+                                    }
+                                ],
+                                ""totalCols"": 8
+                            },
+                            ""cellType"": ""Component""
                         }
                     ]
                 }
@@ -164,49 +458,47 @@ namespace WordDocGenerator
 }";
             // Create a new Word application using late binding
             dynamic? wordApp = Activator.CreateInstance(Type.GetTypeFromProgID("Word.Application"));
-
-            // Create a new document
-            dynamic doc = wordApp!.Documents.Add();
-
-            List<Dictionary<string, object>> DicList = new();
-            JObject ParsedJson = JObject.Parse(json);
-            Dictionary<string, object> Dictionaryobject = JsonConvert.DeserializeObject<Dictionary<string, object>>(JsonConvert.SerializeObject(ParsedJson))!;
-            long rowsCount = ParsedJson["rows"]!.Count();
-            long colsCount = (long)Dictionaryobject["totalCols"];
-
-            // Get the array of cell data objects from the ProcessJSON function
-            List<Dictionary<string, object>> cellDataList = ProcessJSON(json);
-            Console.WriteLine($"rowsCount: {rowsCount}, colsCount: {colsCount}");
-            Table table = doc.Tables.Add(doc.Range(), rowsCount, colsCount);
-
-            // Iterate through each cell data object
-            foreach (Dictionary<string, object> cellData in cellDataList)
+            try
             {
-                // Access properties of the cell data object
-                int rowNumber = (int)cellData["rowNumber"];
-                int colNumber = (int)cellData["colNumber"];
-                string value = cellData.TryGetValue("value", out object? content) ? (string)content : "";
-                string cellType = cellData.TryGetValue("cellType", out object? type) ? (string)type : "";
+                // Create a new document
+                dynamic doc = wordApp!.Documents.Add();
+                JObject ParsedJson = JObject.Parse(json);
+                Dictionary<string, object> Dictionaryobject = JsonConvert.DeserializeObject<Dictionary<string, object>>(JsonConvert.SerializeObject(ParsedJson))!;
+                long rowsCount = ParsedJson["rows"]!.Count();
+                long colsCount = (long)Dictionaryobject["totalCols"];
+                // Get the array of cell data objects from the ProcessJSON function
+                List<Dictionary<string, object>> cellDataList = ProcessJSON(json);
+                foreach (var i in cellDataList)
+                {
+                    var lines = i.Select(kvp => kvp.Key + ": " + kvp.Value.ToString());
+                    string text = string.Join(Environment.NewLine, lines);
+                    Console.WriteLine(text);
+                }
+                CreateTable(doc, cellDataList);
+                // Save the document
+                doc.SaveAs2("C:\\Documents\\example.docx");
 
-                // Execute your desired function, passing the relevant cell data
-                Console.WriteLine($"rowNumber: {rowNumber}, colNumber: {colNumber}, value: {value}, cellType: {cellType}");
-                InsertTextInTable(table, rowNumber, colNumber, value, cellData); // Replace "MyFunction" with your actual function name
             }
-            // Save the document
-            doc.SaveAs2("C:\\Documents\\example.docx");
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+            finally
+            {
+                // Close Word application
+                wordApp!.Quit();
+            }
 
-            // Close Word application
-            wordApp.Quit();
         }
         public static List<Dictionary<string, object>> ProcessJSON(string jsonString)
         {
             List<Dictionary<string, object>> result = new();
             JObject parsedJson = JObject.Parse(jsonString);
-
+            long rowsCount = parsedJson["rows"]!.Count();
+            long colsCount = (long)parsedJson["totalCols"];
             // Track row and column indexes
             int rowIndex = 0;
             int colIndex = 0;
-
             // Iterate through rows
             foreach (var rowItem in parsedJson["rows"]!.Children())
             {
@@ -216,9 +508,10 @@ namespace WordDocGenerator
                     Dictionary<string, object> cellData = new()
                     {
                         ["rowNumber"] = rowIndex + 1,
-                        ["colNumber"] = colIndex + 1
+                        ["colNumber"] = colIndex + 1,
+                        ["rowsCount"] = rowsCount,
+                        ["colsCount"] = colsCount
                     };
-
                     // Extract needed keys and values
                     int? rowSpan = colItem["rowSpan"]?.Value<int>();
                     int? colSpan = colItem["colSpan"]?.Value<int>();
@@ -230,7 +523,6 @@ namespace WordDocGenerator
                     cellData["textAlign"] = textAlign!;
                     cellData["bgColor"] = bgColor!;
                     cellData["color"] = color!;
-
                     if (colItem.HasValues && colItem["font"]!.Type == JTokenType.Object && colItem["font"]!.Children().Any())
                     {
                         var font = colItem["font"];
@@ -239,19 +531,26 @@ namespace WordDocGenerator
                         cellData["fontFamily"] = fontFamily;
                         cellData["fontSize"] = fontSize;
                     }
-
                     // Access the first element of the cellContent array
                     JToken? firstCellContent = colItem["cellContent"]?.FirstOrDefault();
-
                     if (firstCellContent != null)
                     {
                         // Now you can access properties of the first element
+                        if (firstCellContent["tableJson"] != null)
+                        {
+                            var nestedContent = ProcessJSON(firstCellContent["tableJson"]!.ToString());
+                            cellData["table"] = nestedContent;
+                            foreach (var i in nestedContent)
+                            {
+                                var lines = i.Select(kvp => kvp.Key + ": " + kvp.Value?.ToString() ?? "null");
+                                string text = string.Join(Environment.NewLine, lines);
+                                Console.WriteLine(text);
+                            }
+                        }
                         string label = firstCellContent["label"]?.ToString() ?? "";
                         string cellType = firstCellContent["cellType"]?.ToString() ?? "";
-
                         cellData["value"] = label;
                         cellData["cellType"] = cellType;
-
                         // Handle images (if applicable)
                         if (cellType == "Image")
                         {
@@ -270,16 +569,13 @@ namespace WordDocGenerator
                 colIndex = 0;
                 rowIndex++;
             }
-
             Dictionary<int, List<KeyValuePair<int, int>>> mergedCells = new(); // Track merged cell ranges
             foreach (var cellData in result)
             {
                 int rowNumber = (int)cellData["rowNumber"];
                 int colNumber = (int)cellData["colNumber"];
-
                 int? colSpan = (int?)cellData["colSpan"] ?? 1;
                 int? rowSpan = (int?)cellData["rowSpan"] ?? 1;
-
                 // Add merged range to the dictionary
                 if (mergedCells.TryGetValue(rowNumber, out var rangesInRow))
                 {
@@ -290,7 +586,6 @@ namespace WordDocGenerator
                     mergedCells.Add(rowNumber, new List<KeyValuePair<int, int>> { new KeyValuePair<int, int>(colNumber, (colNumber + colSpan - 1) ?? 1) });
                 }
             }
-
             // Add mergedCells information to each cellData object
             foreach (var cellData in result)
             {
@@ -299,11 +594,38 @@ namespace WordDocGenerator
             }
             return result;
         }
-        static void InsertTextInTable(Table table, int row, int column, string value, Dictionary<string, object>? cellContent = null)
+        public static void CreateTable(dynamic doc, List<Dictionary<string, object>> contentList, Table? parentTable = null, int? row = null, int? col = null)
+        {
+            long rowsCount = (long)contentList[0]["rowsCount"];
+            long colsCount = (long)contentList[0]["colsCount"];
+            var table = (parentTable != null) ? doc.Tables.Add(parentTable.Cell(row ?? 1, col ?? 1).Range, rowsCount, colsCount) : doc.Tables.Add(doc.Range(), rowsCount, colsCount);
+            if (parentTable != null)
+            {
+                for (int i = 1; i < rowsCount; i++)
+                {
+                    _ = table.Rows.Add();
+                }
+            }
+            foreach (Dictionary<string, object> cellData in contentList)
+            {
+                // Access properties of the cell data object
+                int rowNumber = (int)cellData["rowNumber"];
+                int colNumber = (int)cellData["colNumber"];
+                string value = cellData.TryGetValue("value", out object? content) ? (string)content : "";
+                string cellType = cellData.TryGetValue("cellType", out object? type) ? (string)type : "";
+                List<Dictionary<string, object>> tableJson = (List<Dictionary<string, object>>)(cellData.TryGetValue("table", out object? tableContent) ? tableContent : null)!;
+                if (tableJson != null)
+                {
+                    CreateTable(doc, tableJson, table, rowNumber, colNumber);
+                }
+                InsertTextInTable(table, rowNumber, colNumber, value, cellData, doc);
+            }
+        }
+        static void InsertTextInTable(Table table, int row, int column, string value, Dictionary<string, object>? cellContent = null, dynamic? doc = null)
         {
             if (row <= 0 || column <= 0 || row > table.Rows.Count || column > table.Columns.Count)
             {
-                Console.WriteLine($"Invalid table position. {row} {row > table.Rows.Count}, {column} {column > table.Columns.Count}");
+                //Console.WriteLine($"Invalid table position. {row} {row > table.Rows.Count}, {column} {column > table.Columns.Count}");
                 return;
             }
             /** maybe can be used to merge rows?
@@ -317,18 +639,23 @@ namespace WordDocGenerator
             */
             if (cellContent != null)
             {
+                Cell cell = table.Cell(row, column);
+                // Merge cell start
+                #region
                 if (cellContent.ContainsKey("mergedCells"))
                 {
-                    var cellRange = table.Cell(row, column).Range;
+                    var cellRange = cell.Range;
 
                     // Adjust the End property of the range to span multiple columns
-                    cellRange.SetRange(cellRange.Start, table.Cell(row, column + int.Parse(cellContent["colSpan"].ToString()) - 1).Range.End);
+                    cellRange.SetRange(cellRange.Start, table.Cell(row, column + int.Parse(cellContent["colSpan"].ToString()!) - 1).Range.End);
 
                     // Merge the cells
                     cellRange.Cells.Merge();
                 }
-
-                Cell cell = table.Cell(row, column);
+                #endregion
+                // Merge cell end
+                //styles start
+                #region
                 Font font = cell.Range.Font;
                 string? textAlign = cellContent.TryGetValue("textAlign", out object? content) ? (string)content : "";
                 string? bgColor = cellContent.TryGetValue("bgColor", out object? bColor) ? (string)bColor : "";
@@ -337,13 +664,13 @@ namespace WordDocGenerator
                 float? fontSize = cellContent.TryGetValue("fontSize", out object? size) ? (float)size : null;
                 Paragraph paragraph = AlignCellContent(cell, textAlign);
 
-                if (bgColor != "")
+                if (bgColor != null && bgColor != "")
                 {
                     System.Drawing.Color backgroundColor = HexToColor(bgColor);
                     // Set background color
                     cell.Range.Shading.BackgroundPatternColor = (WdColor)(backgroundColor.R + 0x100 * backgroundColor.G + 0x10000 * backgroundColor.B);
                 }
-                if (textColor != "")
+                if (textColor != null && textColor != "")
                 {
                     System.Drawing.Color color = HexToColor(textColor);
                     font.Color = (WdColor)(color.R + 0x100 * color.G + 0x10000 * color.B);
@@ -358,13 +685,41 @@ namespace WordDocGenerator
                     // Set font size
                     font.Size = (float)fontSize;
                 }
-                // Add Content to the cell
-                paragraph.Range.Text = value;
+                #endregion
+                //styles end
+                cellContent.TryGetValue("cellType", out object? cellType);
+                if (cellType?.ToString() == "DynamicInput")
+                {
+                    Microsoft.Office.Interop.Word.Range range = cell.Range.Duplicate;
+                    object objType = WdFieldType.wdFieldMergeField;
+                    object objFieldName = value;
+
+                    range.MoveStart(WdUnits.wdCharacter, 1);
+                    //range = doc.Range();
+                    range.SetRange(range.Start - 1, range.End - 1);
+                    // Insert the merge field
+                    Field field = range.Fields.Add(range, objType, objFieldName, false);
+                }
+                else
+                {
+                    paragraph.Range.Text = value;
+                }
             }
             else
             {
                 table.Cell(row, column).Range.Text = value;
             }
+        }
+        static void AddMergeFieldToCell(Microsoft.Office.Interop.Word.Cell cell, string fieldName)
+        {
+            // Create a Range object for the cell
+            Microsoft.Office.Interop.Word.Range cellRange = cell.Range;
+
+            // Insert a merge field at the beginning of the cell
+            cellRange.InsertAfter("<< " + fieldName + " >>");
+
+            // Update the document to refresh the merge fields
+            cellRange.Fields.Update();
         }
         static Paragraph AlignCellContent(Cell cell, string textAlign = "")
         {
@@ -372,7 +727,6 @@ namespace WordDocGenerator
             Paragraph paragraph = cell.Range.Paragraphs.Count > 0
                 ? cell.Range.Paragraphs[1]
                 : cell.Range.Paragraphs.Add();
-
             switch (textAlign)
             {
                 case "left":
@@ -387,7 +741,6 @@ namespace WordDocGenerator
                 default:
                     break;
             }
-
             return paragraph;
         }
         static System.Drawing.Color HexToColor(string hex)
@@ -397,13 +750,10 @@ namespace WordDocGenerator
             {
                 hex += new string(hex[0], 3);
             }
-
             int rgb = int.Parse(hex, System.Globalization.NumberStyles.HexNumber);
-
             byte red = (byte)(rgb >> 16);
             byte green = (byte)(rgb >> 8);
             byte blue = (byte)(rgb);
-
             return System.Drawing.Color.FromArgb(red, green, blue);
         }
     }
