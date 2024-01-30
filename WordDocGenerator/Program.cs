@@ -1,12 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System.Collections.Generic;
-using System.Collections;
-using Xceed.Words.NET;
 using Microsoft.Office.Interop.Word;
-using DocumentFormat.OpenXml.ExtendedProperties;
-using System.Reflection;
-
 namespace WordDocGenerator
 {
     class Program
@@ -464,20 +458,11 @@ http://localhost:4200/2b432dee-98d8-44ac-9813-c95da8a017ac""
                 dynamic doc = wordApp!.Documents.Add();
                 JObject ParsedJson = JObject.Parse(json);
                 Dictionary<string, object> Dictionaryobject = JsonConvert.DeserializeObject<Dictionary<string, object>>(JsonConvert.SerializeObject(ParsedJson))!;
-                long rowsCount = ParsedJson["rows"]!.Count();
-                long colsCount = (long)Dictionaryobject["totalCols"];
                 // Get the array of cell data objects from the ProcessJSON function
                 List<Dictionary<string, object>> cellDataList = ProcessJSON(json);
-                foreach (var i in cellDataList)
-                {
-                    var lines = i.Select(kvp => kvp.Key + ": " + kvp.Value.ToString());
-                    string text = string.Join(Environment.NewLine, lines);
-                    Console.WriteLine(text);
-                }
                 CreateTable(doc, cellDataList);
                 // Save the document
                 doc.SaveAs2("C:\\Documents\\example.docx");
-
             }
             catch (Exception ex)
             {
@@ -488,14 +473,13 @@ http://localhost:4200/2b432dee-98d8-44ac-9813-c95da8a017ac""
                 // Close Word application
                 wordApp!.Quit();
             }
-
         }
         public static List<Dictionary<string, object>> ProcessJSON(string jsonString)
         {
             List<Dictionary<string, object>> result = new();
             JObject parsedJson = JObject.Parse(jsonString);
             long rowsCount = parsedJson["rows"]!.Count();
-            long colsCount = (long)parsedJson["totalCols"];
+            long colsCount = (long)parsedJson["totalCols"]!;
             // Track row and column indexes
             int rowIndex = 0;
             int colIndex = 0;
@@ -535,22 +519,18 @@ http://localhost:4200/2b432dee-98d8-44ac-9813-c95da8a017ac""
                     JToken? firstCellContent = colItem["cellContent"]?.FirstOrDefault();
                     if (firstCellContent != null)
                     {
+
+                        string label = firstCellContent["label"]?.ToString() ?? "";
+                        string cellType = firstCellContent["cellType"]?.ToString() ?? "";
+                        cellData["value"] = label;
+                        cellData["cellType"] = cellType;
+
                         // Now you can access properties of the first element
                         if (firstCellContent["tableJson"] != null)
                         {
                             var nestedContent = ProcessJSON(firstCellContent["tableJson"]!.ToString());
                             cellData["table"] = nestedContent;
-                            foreach (var i in nestedContent)
-                            {
-                                var lines = i.Select(kvp => kvp.Key + ": " + kvp.Value?.ToString() ?? "null");
-                                string text = string.Join(Environment.NewLine, lines);
-                                Console.WriteLine(text);
-                            }
                         }
-                        string label = firstCellContent["label"]?.ToString() ?? "";
-                        string cellType = firstCellContent["cellType"]?.ToString() ?? "";
-                        cellData["value"] = label;
-                        cellData["cellType"] = cellType;
                         // Handle images (if applicable)
                         if (cellType == "Image")
                         {
@@ -618,10 +598,17 @@ http://localhost:4200/2b432dee-98d8-44ac-9813-c95da8a017ac""
                 {
                     CreateTable(doc, tableJson, table, rowNumber, colNumber);
                 }
-                InsertTextInTable(table, rowNumber, colNumber, value, cellData, doc);
+                if (cellType == "Image")
+                {
+                    InsertImage(table, rowNumber, colNumber, cellData);
+                }
+                else
+                {
+                    InsertTextInTable(table, rowNumber, colNumber, value, cellData);
+                }
             }
         }
-        static void InsertTextInTable(Table table, int row, int column, string value, Dictionary<string, object>? cellContent = null, dynamic? doc = null)
+        static void InsertTextInTable(Table table, int row, int column, string value, Dictionary<string, object>? cellContent = null)
         {
             if (row <= 0 || column <= 0 || row > table.Rows.Count || column > table.Columns.Count)
             {
@@ -637,18 +624,18 @@ http://localhost:4200/2b432dee-98d8-44ac-9813-c95da8a017ac""
             //cellRange.Cells.Merge();  // Merge the cells within the range
             //}
             */
+            Cell cell = table.Cell(row, column);
             if (cellContent != null)
             {
-                Cell cell = table.Cell(row, column);
                 // Merge cell start
                 #region
                 if (cellContent.ContainsKey("mergedCells"))
                 {
                     var cellRange = cell.Range;
-
                     // Adjust the End property of the range to span multiple columns
-                    cellRange.SetRange(cellRange.Start, table.Cell(row, column + int.Parse(cellContent["colSpan"].ToString()!) - 1).Range.End);
-
+                    var rowSpan = (row + (int.Parse(cellContent["rowSpan"].ToString()!) - 1));
+                    var colSpan = (column + (int.Parse(cellContent["colSpan"].ToString()!) - 1));
+                    cellRange.SetRange(cellRange.Start, table.Cell(rowSpan, colSpan).Range.End);
                     // Merge the cells
                     cellRange.Cells.Merge();
                 }
@@ -662,7 +649,8 @@ http://localhost:4200/2b432dee-98d8-44ac-9813-c95da8a017ac""
                 string? textColor = cellContent.TryGetValue("color", out object? fontColor) ? (string)fontColor : "";
                 string? fontFamily = cellContent.TryGetValue("fontFamily", out object? family) ? (string)family : "";
                 float? fontSize = cellContent.TryGetValue("fontSize", out object? size) ? (float)size : null;
-                Paragraph paragraph = AlignCellContent(cell, textAlign);
+                cellContent.TryGetValue("cellType", out object? cellType);
+                Paragraph paragraph = AlignCellContent(cell, textAlign, (cellType?.ToString() == "DynamicInput"))!;
 
                 if (bgColor != null && bgColor != "")
                 {
@@ -687,61 +675,76 @@ http://localhost:4200/2b432dee-98d8-44ac-9813-c95da8a017ac""
                 }
                 #endregion
                 //styles end
-                cellContent.TryGetValue("cellType", out object? cellType);
                 if (cellType?.ToString() == "DynamicInput")
                 {
-                    Microsoft.Office.Interop.Word.Range range = cell.Range.Duplicate;
-                    object objType = WdFieldType.wdFieldMergeField;
-                    object objFieldName = value;
-
-                    range.MoveStart(WdUnits.wdCharacter, 1);
-                    //range = doc.Range();
-                    range.SetRange(range.Start - 1, range.End - 1);
-                    // Insert the merge field
-                    Field field = range.Fields.Add(range, objType, objFieldName, false);
+                    AddMergeFieldToCell(cell, value, textAlign);
                 }
                 else
                 {
-                    paragraph.Range.Text = value;
+                    paragraph.Range.Text += value;
                 }
             }
             else
             {
-                table.Cell(row, column).Range.Text = value;
+                cell.Range.Text = value;
             }
         }
-        static void AddMergeFieldToCell(Microsoft.Office.Interop.Word.Cell cell, string fieldName)
+        static void InsertImage(Table table, int row, int column, Dictionary<string, object>? cellContent)
         {
-            // Create a Range object for the cell
-            Microsoft.Office.Interop.Word.Range cellRange = cell.Range;
+            // Get the current selection or range in the document
+            Cell cell = table.Cell(row, column);
 
-            // Insert a merge field at the beginning of the cell
-            cellRange.InsertAfter("<< " + fieldName + " >>");
+            // Insert the image
+            InlineShape picture = cell.Range.InlineShapes.AddPicture("");
 
-            // Update the document to refresh the merge fields
-            cellRange.Fields.Update();
+            // Optionally, you can modify properties of the inserted picture, such as width and height
+            picture.Width = 200; // Set the width in points
+            picture.Height = 150; // Set the height in points
         }
-        static Paragraph AlignCellContent(Cell cell, string textAlign = "")
+        static void AddMergeFieldToCell(Cell cell, string fieldName, string textAlign)
+        {
+            // Duplicate the current cell range
+            Microsoft.Office.Interop.Word.Range range = cell.Range.Duplicate;
+            AlignCellContent(cell, textAlign, true, range);
+            object objType = WdFieldType.wdFieldMergeField;
+            object objFieldName = fieldName;
+
+            /** important, don't remove the below code is used for getting rid of "Command not available" as such error! **/
+            #region
+            // Move one step forward
+            range.MoveStart(WdUnits.wdCharacter, 1);
+            // Move it back to the cell range, basically reset.
+            range.SetRange(range.Start - 1, range.End - 1);
+            #endregion
+            /** End of error fix! **/
+            // Insert the merge field
+            range.Fields.Add(range, objType, objFieldName, false);
+        }
+        static dynamic AlignCellContent(Cell cell, string textAlign = "", bool isDynamicField = false, Microsoft.Office.Interop.Word.Range? range = null)
         {
             // Access the existing paragraph or add a new one
-            Paragraph paragraph = cell.Range.Paragraphs.Count > 0
+            dynamic paragraphOrRange = (isDynamicField ? range! : ((cell.Range.Paragraphs.Count > 0)
                 ? cell.Range.Paragraphs[1]
-                : cell.Range.Paragraphs.Add();
+                : cell.Range.Paragraphs.Add())!);
             switch (textAlign)
             {
                 case "left":
-                    paragraph.Alignment = WdParagraphAlignment.wdAlignParagraphLeft;
+                    SetAlignment(paragraphOrRange, WdParagraphAlignment.wdAlignParagraphLeft);
                     break;
                 case "right":
-                    paragraph.Alignment = WdParagraphAlignment.wdAlignParagraphRight;
+                    SetAlignment(paragraphOrRange, WdParagraphAlignment.wdAlignParagraphRight);
                     break;
                 case "center":
-                    paragraph.Alignment = WdParagraphAlignment.wdAlignParagraphCenter;
+                    SetAlignment(paragraphOrRange, WdParagraphAlignment.wdAlignParagraphCenter);
                     break;
                 default:
                     break;
             }
-            return paragraph;
+            return paragraphOrRange;
+        }
+        static void SetAlignment(dynamic x, WdParagraphAlignment alignment)
+        {
+            x.Alignment = alignment;
         }
         static System.Drawing.Color HexToColor(string hex)
         {
